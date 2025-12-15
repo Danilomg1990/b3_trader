@@ -1,126 +1,72 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>B3 AI Trader</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-gray-900 text-white font-sans">
-
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="bg-gray-900 text-white font-sans">
     <div class="container mx-auto p-5">
-        <header class="mb-10 text-center">
-            <h1 class="text-4xl font-bold text-green-400">B3 AI Swing Trade 📈</h1>
-            <p class="text-gray-400">Análise de ações com Machine Learning</p>
-        </header>
+      <header class="mb-10 text-center">
+        <h1 class="text-4xl font-bold text-green-400">B3 AI Swing Trade 📈</h1>
+        <p class="text-gray-400">Análise de ações com Machine Learning</p>
+      </header>
 
-        <div class="flex justify-center gap-4 mb-8">
-            <input type="text" id="tickerInput" placeholder="Ex: PETR4, VALE3" 
-                   class="p-3 rounded bg-gray-800 border border-gray-700 text-white uppercase focus:outline-none focus:border-green-500">
-            <button onclick="analyzeStock()" 
-                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded transition">
-                Analisar
-            </button>
+      <div class="flex justify-center gap-4 mb-8">
+        <input
+          type="text"
+          id="tickerInput"
+          placeholder="Ex: PETR4"
+          class="p-3 rounded bg-gray-800 border border-gray-700 text-white uppercase focus:outline-none focus:border-green-500"
+        />
+        <button
+          id="analyzeBtn"
+          class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded transition"
+        >
+          Analisar
+        </button>
+      </div>
+
+      <div id="loading" class="hidden flex flex-col items-center mt-10">
+        <div class="loader"></div>
+        <p class="text-xl mt-4 animate-pulse">
+          Consultando dados e treinando IA...
+        </p>
+      </div>
+
+      <div id="resultArea" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg card-hover">
+          <h3 class="text-xl text-gray-400">Recomendação IA</h3>
+          <p id="aiSignal" class="text-3xl font-bold mt-2">--</p>
+          <p class="text-sm text-gray-500 mt-2">
+            Confiança: <span id="aiConf">--</span>
+          </p>
         </div>
 
-        <div id="resultArea" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                <h3 class="text-xl text-gray-400">Recomendação IA</h3>
-                <p id="aiSignal" class="text-3xl font-bold mt-2">--</p>
-                <p class="text-sm text-gray-500 mt-2">Confiança: <span id="aiConf">--</span></p>
-            </div>
-
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                <h3 class="text-xl text-gray-400">Acurácia Histórica</h3>
-                <p id="aiAcc" class="text-3xl font-bold text-blue-400 mt-2">--</p>
-                <p class="text-sm text-gray-500 mt-2">Baseado em Backtesting</p>
-            </div>
-
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                <h3 class="text-xl text-gray-400">Preço Atual</h3>
-                <p id="currPrice" class="text-3xl font-bold text-yellow-400 mt-2">--</p>
-            </div>
-
-            <div class="col-span-1 md:col-span-3 bg-gray-800 p-4 rounded-lg mt-4">
-                <canvas id="stockChart" style="max-height: 400px;"></canvas>
-            </div>
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg card-hover">
+          <h3 class="text-xl text-gray-400">Acurácia do Modelo</h3>
+          <p id="aiAcc" class="text-3xl font-bold text-blue-400 mt-2">--</p>
+          <p class="text-sm text-gray-500 mt-2">Baseado em Backtesting</p>
         </div>
 
-        <div id="loading" class="hidden text-center mt-10">
-            <p class="text-xl animate-pulse">Consultando dados e treinando IA...</p>
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg card-hover">
+          <h3 class="text-xl text-gray-400">Preço Atual</h3>
+          <p id="currPrice" class="text-3xl font-bold text-yellow-400 mt-2">
+            --
+          </p>
         </div>
+
+        <div
+          class="col-span-1 md:col-span-3 bg-gray-800 p-4 rounded-lg mt-4 shadow-lg"
+        >
+          <canvas id="stockChart" style="max-height: 400px"></canvas>
+        </div>
+      </div>
     </div>
 
-    <script>
-        let myChart = null;
-
-        async function analyzeStock() {
-            const ticker = document.getElementById('tickerInput').value.toUpperCase();
-            if(!ticker) return alert("Digite um ticker!");
-
-            // UI Updates
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('resultArea').classList.add('hidden');
-
-            try {
-                // 1. Sincronizar dados (Ingestão)
-                await fetch(`http://127.0.0.1:8000/sync/${ticker}`, { method: 'POST' });
-
-                // 2. Analisar e Prever
-                const res = await fetch(`http://127.0.0.1:8000/analyze/${ticker}`);
-                if (!res.ok) throw new Error("Erro na análise");
-                
-                const data = await res.json();
-
-                // Atualizar Dashboard
-                document.getElementById('aiSignal').innerText = data.ai_recommendation;
-                document.getElementById('aiSignal').className = `text-3xl font-bold mt-2 ${data.ai_recommendation.includes('COMPRA') ? 'text-green-500' : 'text-red-500'}`;
-                document.getElementById('aiConf').innerText = data.ai_confidence;
-                document.getElementById('aiAcc').innerText = data.model_accuracy;
-                document.getElementById('currPrice').innerText = `R$ ${data.current_price.toFixed(2)}`;
-
-                renderChart(data.chart_data.dates, data.chart_data.prices, ticker);
-
-                document.getElementById('resultArea').classList.remove('hidden');
-
-            } catch (error) {
-                alert("Erro: " + error.message);
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
-            }
-        }
-
-        function renderChart(dates, prices, ticker) {
-            const ctx = document.getElementById('stockChart').getContext('2d');
-            
-            if (myChart) myChart.destroy();
-
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: `Preço de Fechamento - ${ticker}`,
-                        data: prices,
-                        borderColor: '#34D399',
-                        backgroundColor: 'rgba(52, 211, 153, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { labels: { color: 'white' } } },
-                    scales: {
-                        x: { ticks: { color: '#9CA3AF' } },
-                        y: { ticks: { color: '#9CA3AF' } }
-                    }
-                }
-            });
-        }
-    </script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>

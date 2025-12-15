@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
-
+from . import services
 from . import models, database, ml_engine
 
 # Criar as tabelas
@@ -22,10 +22,8 @@ app.add_middleware(
 
 @app.post("/sync/{ticker}")
 def sync_stock_data(ticker: str, db: Session = Depends(database.get_db)):
-    """Baixa dados do Yahoo Finance e salva no banco"""
-    ticker_obj = yf.Ticker(f"{ticker}.SA") # Adiciona .SA para B3
-    # Baixa últimos 2 anos de dados
-    hist = ticker_obj.history(period="2y")
+    """Sincroniza dados históricos da ação para o banco de dados"""
+    hist = services.fetch_stock_history(ticker)
     
     if hist.empty:
         raise HTTPException(status_code=404, detail="Ação não encontrada")
