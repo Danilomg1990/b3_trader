@@ -3,66 +3,324 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>B3 AI Trader</title>
+    <title>B3 AI Trader V3 - Laboratório</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body class="bg-gray-900 text-white font-sans">
-    <div class="container mx-auto p-5">
-      <header class="mb-10 text-center">
-        <h1 class="text-4xl font-bold text-green-400">B3 AI Swing Trade 📈</h1>
-        <p class="text-gray-400">Análise de ações com Machine Learning</p>
+  <body
+    class="bg-gray-900 text-white font-sans antialiased selection:bg-green-500 selection:text-white"
+  >
+    <div class="container mx-auto p-5 max-w-6xl">
+      <header class="mb-8 text-center">
+        <h1
+          class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-500 tracking-tight"
+        >
+          B3 AI Trader 🚀
+        </h1>
+        <p class="text-gray-400 mt-2 text-lg">
+          Laboratório de Previsão com Inteligência Artificial
+        </p>
+
+        <div class="mt-4">
+          <a
+            href="history.html"
+            class="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 underline transition cursor-pointer group"
+          >
+            <span>📊 Ver Relatório de Performance Global</span>
+            <span class="group-hover:translate-x-1 transition-transform"
+              >→</span
+            >
+          </a>
+        </div>
       </header>
 
-      <div class="flex justify-center gap-4 mb-8">
-        <input
-          type="text"
-          id="tickerInput"
-          placeholder="Ex: PETR4"
-          class="p-3 rounded bg-gray-800 border border-gray-700 text-white uppercase focus:outline-none focus:border-green-500"
-        />
-        <button
-          id="analyzeBtn"
-          class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded transition"
+      <div
+        class="bg-gray-800 p-6 rounded-2xl shadow-2xl mb-6 border border-gray-700 relative overflow-hidden"
+      >
+        <div
+          class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-green-500 rounded-full opacity-10 blur-xl"
+        ></div>
+
+        <div
+          class="flex flex-col md:flex-row justify-center items-end gap-5 relative z-10"
         >
-          Analisar
-        </button>
+          <div class="w-full md:w-auto flex-1">
+            <label
+              class="block text-gray-400 text-xs uppercase font-bold mb-1 ml-1 tracking-wider"
+              >Ativo (Ticker)</label
+            >
+            <input
+              type="text"
+              id="tickerInput"
+              placeholder="Ex: PETR4"
+              class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white placeholder-gray-600 uppercase font-bold text-lg focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition shadow-inner"
+            />
+          </div>
+
+          <div class="w-full md:w-32">
+            <label
+              class="block text-gray-400 text-xs uppercase font-bold mb-1 ml-1 tracking-wider"
+              >Previsão (Dias)</label
+            >
+            <input
+              type="number"
+              id="daysInput"
+              value="5"
+              min="1"
+              max="30"
+              class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white font-bold text-lg text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-inner"
+            />
+          </div>
+
+          <button
+            id="analyzeBtn"
+            class="w-full md:w-auto bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 px-10 rounded-xl shadow-lg transform active:scale-95 transition duration-200 border border-green-500/30"
+          >
+            Processar IA
+          </button>
+        </div>
       </div>
 
-      <div id="loading" class="hidden flex flex-col items-center mt-10">
-        <div class="loader"></div>
-        <p class="text-xl mt-4 animate-pulse">
-          Consultando dados e treinando IA...
+      <div
+        class="bg-gray-800 p-5 rounded-xl shadow-lg mb-8 border border-gray-700"
+      >
+        <p
+          class="text-xs text-gray-400 uppercase font-bold mb-4 border-b border-gray-700 pb-2 flex items-center gap-2"
+        >
+          <span class="text-lg">⚙️</span> Selecione os Indicadores para
+          Treinamento:
+        </p>
+
+        <div
+          class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm select-none"
+        >
+          <label
+            class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded-lg border border-gray-700 hover:border-green-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="RSI"
+              checked
+              class="accent-green-500 w-4 h-4 cursor-pointer"
+            />
+            <span class="group-hover:text-green-300 transition">RSI (14)</span>
+          </label>
+
+          <label
+            class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded-lg border border-gray-700 hover:border-green-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="MACD"
+              checked
+              class="accent-green-500 w-4 h-4 cursor-pointer"
+            />
+            <span class="group-hover:text-green-300 transition">MACD</span>
+          </label>
+
+          <label
+            class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded-lg border border-gray-700 hover:border-blue-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="SMA_14"
+              class="accent-blue-500 w-4 h-4 cursor-pointer"
+            />
+            <span class="group-hover:text-blue-300 transition"
+              >Média 14 (Rápida)</span
+            >
+          </label>
+
+          <label
+            class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded-lg border border-gray-700 hover:border-blue-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="SMA_20"
+              checked
+              class="accent-blue-500 w-4 h-4 cursor-pointer"
+            />
+            <span class="group-hover:text-blue-300 transition"
+              >Média 20 (Normal)</span
+            >
+          </label>
+
+          <label
+            class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded-lg border border-gray-700 hover:border-purple-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="SMA_200"
+              checked
+              class="accent-purple-500 w-4 h-4 cursor-pointer"
+            />
+            <span
+              class="font-bold text-purple-400 group-hover:text-purple-300 transition"
+              >Média 200 (Longa)</span
+            >
+          </label>
+
+          <label
+            class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded-lg border border-gray-700 hover:border-orange-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="BB_Upper"
+              checked
+              class="accent-orange-500 w-4 h-4 cursor-pointer"
+            />
+            <span class="group-hover:text-orange-300 transition"
+              >Bollinger Topo</span
+            >
+          </label>
+
+          <label
+            class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded-lg border border-gray-700 hover:border-orange-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="BB_Lower"
+              checked
+              class="accent-orange-500 w-4 h-4 cursor-pointer"
+            />
+            <span class="group-hover:text-orange-300 transition"
+              >Bollinger Fundo</span
+            >
+          </label>
+
+          <label
+            class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded-lg border border-gray-700 hover:border-yellow-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="Golden_Cross"
+              class="accent-yellow-500 w-4 h-4 cursor-pointer"
+            />
+            <span
+              class="text-yellow-500 group-hover:text-yellow-300 font-bold transition"
+              >Golden Cross ⚡</span
+            >
+          </label>
+
+          <label
+            class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded-lg border border-gray-700 hover:border-gray-400 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="ROC"
+              class="accent-gray-500 w-4 h-4 cursor-pointer"
+            />
+            <span class="group-hover:text-gray-300 transition"
+              >Momentum (ROC)</span
+            >
+          </label>
+        </div>
+      </div>
+
+      <div
+        id="loading"
+        class="hidden flex flex-col items-center mt-12 animate-pulse"
+      >
+        <div class="loader mb-6"></div>
+        <p class="text-xl font-medium text-green-400">
+          Consultando B3, Treinando IA e Auditando...
+        </p>
+        <p class="text-sm text-gray-500 mt-2">
+          Isso pode levar alguns segundos dependendo da complexidade.
         </p>
       </div>
 
-      <div id="resultArea" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-gray-800 p-6 rounded-lg shadow-lg card-hover">
-          <h3 class="text-xl text-gray-400">Recomendação IA</h3>
-          <p id="aiSignal" class="text-3xl font-bold mt-2">--</p>
-          <p class="text-sm text-gray-500 mt-2">
-            Confiança: <span id="aiConf">--</span>
-          </p>
-        </div>
+      <div id="resultArea" class="hidden animate-fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div
+            class="bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-purple-500 hover:bg-gray-750 transition duration-300 transform hover:-translate-y-1"
+          >
+            <h3
+              class="text-xs text-gray-400 uppercase tracking-wider font-bold"
+            >
+              Sinal Técnico
+            </h3>
+            <p id="aiSignal" class="text-3xl font-bold mt-2 truncate">--</p>
+            <p class="text-xs text-gray-500 mt-2">
+              Confiança IA:
+              <span id="aiConf" class="text-gray-300 font-mono">--</span>
+            </p>
+          </div>
 
-        <div class="bg-gray-800 p-6 rounded-lg shadow-lg card-hover">
-          <h3 class="text-xl text-gray-400">Acurácia do Modelo</h3>
-          <p id="aiAcc" class="text-3xl font-bold text-blue-400 mt-2">--</p>
-          <p class="text-sm text-gray-500 mt-2">Baseado em Backtesting</p>
-        </div>
+          <div
+            class="bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-yellow-500 hover:bg-gray-750 transition duration-300 transform hover:-translate-y-1"
+          >
+            <h3
+              class="text-xs text-gray-400 uppercase tracking-wider font-bold"
+            >
+              Preço Hoje
+            </h3>
+            <p
+              id="currPrice"
+              class="text-3xl font-bold text-white mt-2 font-mono"
+            >
+              --
+            </p>
+            <p class="text-xs text-gray-500 mt-2">Último Fechamento</p>
+          </div>
 
-        <div class="bg-gray-800 p-6 rounded-lg shadow-lg card-hover">
-          <h3 class="text-xl text-gray-400">Preço Atual</h3>
-          <p id="currPrice" class="text-3xl font-bold text-yellow-400 mt-2">
-            --
-          </p>
+          <div
+            class="bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:bg-gray-750 transition duration-300 transform hover:-translate-y-1"
+          >
+            <h3
+              class="text-xs text-gray-400 uppercase tracking-wider font-bold"
+            >
+              Alvo (<span id="targetDays">--</span> dias)
+            </h3>
+            <p
+              id="predPrice"
+              class="text-3xl font-bold text-blue-400 mt-2 font-mono"
+            >
+              --
+            </p>
+            <p id="predVar" class="text-sm font-bold mt-2">--</p>
+          </div>
+
+          <div
+            class="bg-gray-800 p-5 rounded-xl shadow-lg border-l-4 border-gray-500 overflow-hidden hover:bg-gray-750 transition duration-300"
+          >
+            <div class="flex justify-between items-center mb-2">
+              <h3
+                class="text-xs text-gray-400 uppercase tracking-wider font-bold"
+              >
+                Últimos Testes
+              </h3>
+              <span
+                class="text-[10px] bg-gray-700 px-2 py-1 rounded text-gray-300"
+                >Auditoria</span
+              >
+            </div>
+            <div
+              id="historyList"
+              class="text-xs space-y-2 max-h-24 overflow-y-auto pr-1 scrollbar-thin"
+            >
+              <p class="text-gray-600 italic">Sem histórico ainda.</p>
+            </div>
+          </div>
         </div>
 
         <div
-          class="col-span-1 md:col-span-3 bg-gray-800 p-4 rounded-lg mt-4 shadow-lg"
+          class="bg-gray-800 p-4 rounded-xl shadow-2xl border border-gray-700"
         >
-          <canvas id="stockChart" style="max-height: 400px"></canvas>
+          <canvas id="stockChart" style="max-height: 450px"></canvas>
         </div>
       </div>
     </div>

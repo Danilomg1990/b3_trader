@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Histórico Completo - B3 AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="history.css" />
+  </head>
+  <body class="bg-gray-900 text-white font-sans antialiased">
+    <div class="container mx-auto p-5 max-w-6xl">
+      <header
+        class="flex flex-col md:flex-row justify-between items-center mb-8 pb-5 border-b border-gray-700"
+      >
+        <div>
+          <h1
+            class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400"
+          >
+            Arquivo de Operações 🗂️
+          </h1>
+          <p class="text-gray-400 text-sm mt-1">
+            Performance consolidada e registro individual
+          </p>
+        </div>
+        <a
+          href="index.html"
+          class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2 rounded-lg border border-gray-600 transition shadow"
+        >
+          ⬅ Voltar ao Laboratório
+        </a>
+      </header>
+
+      <div class="mb-10">
+        <h2
+          class="text-xl font-bold text-gray-300 mb-4 flex items-center gap-2"
+        >
+          <span>🏆</span> Ranking de Assertividade
+        </h2>
+        <div
+          class="bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-700"
+        >
+          <table class="w-full text-left">
+            <thead class="bg-gray-900 text-gray-400 uppercase text-xs">
+              <tr>
+                <th class="px-6 py-3">Ativo</th>
+                <th class="px-6 py-3 text-center">Total Análises</th>
+                <th class="px-6 py-3 text-center">Taxa de Acerto</th>
+                <th class="px-6 py-3 text-center">Erro Médio</th>
+              </tr>
+            </thead>
+            <tbody id="statsTable" class="divide-y divide-gray-700 text-sm">
+              <tr>
+                <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                  Carregando...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <h2
+          class="text-xl font-bold text-gray-300 mb-4 flex items-center gap-2"
+        >
+          <span>📝</span> Registro Detalhado de Pesquisas
+        </h2>
+        <div
+          class="bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-700"
+        >
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead class="bg-gray-900 text-gray-400 uppercase text-xs">
+                <tr>
+                  <th class="px-4 py-3">Data Análise</th>
+                  <th class="px-4 py-3">Alvo</th>
+                  <th class="px-4 py-3">Ativo</th>
+                  <th class="px-4 py-3">Indicadores Usados</th>
+                  <th class="px-4 py-3 text-right">Previsão</th>
+                  <th class="px-4 py-3 text-right">Real</th>
+                  <th class="px-4 py-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="logTable" class="divide-y divide-gray-700 text-xs">
+                <tr>
+                  <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                    Carregando histórico completo...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="history.js"></script>
+  </body>
+</html>
