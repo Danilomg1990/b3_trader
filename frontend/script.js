@@ -25,7 +25,22 @@ async function analyzeStock() {
   const ticker = tickerInput.value.toUpperCase().trim();
   const days = daysInput.value;
 
-  // Validação simples
+  // --- CORREÇÃO AQUI: Captura os Checkboxes dos Indicadores ---
+  const checkboxes = document.querySelectorAll(
+    'input[name="indicators"]:checked'
+  );
+  let selectedIndicators = [];
+  checkboxes.forEach((checkbox) => {
+    selectedIndicators.push(checkbox.value);
+  });
+
+  // Validação: Tem que selecionar pelo menos um indicador
+  if (selectedIndicators.length === 0) {
+    alert("Selecione pelo menos um indicador para a IA trabalhar!");
+    return;
+  }
+
+  // Validação do Ticker
   if (!ticker) {
     alert("Por favor, digite o código da ação (ex: PETR4, VALE3).");
     return;
@@ -40,7 +55,6 @@ async function analyzeStock() {
 
   try {
     // 3. Passo A: Sincronizar dados (Ingestão + Auditoria)
-    // Isso força o backend a baixar dados novos e checar se errou previsões passadas
     const syncResponse = await fetch(`${API_BASE_URL}/sync/${ticker}`, {
       method: "POST",
     });
@@ -49,8 +63,14 @@ async function analyzeStock() {
       throw new Error("Erro ao sincronizar dados com a B3.");
 
     // 4. Passo B: Analisar (Classificação + Regressão)
+    // Montamos a Query String manualmente para enviar a lista de indicadores
+    const params = new URLSearchParams();
+    params.append("days", days);
+    selectedIndicators.forEach((ind) => params.append("indicators", ind));
+
+    // A URL final ficará algo como: /analyze/PETR4?days=5&indicators=RSI&indicators=MACD
     const analyzeResponse = await fetch(
-      `${API_BASE_URL}/analyze/${ticker}?days=${days}`
+      `${API_BASE_URL}/analyze/${ticker}?${params.toString()}`
     );
 
     if (!analyzeResponse.ok)
