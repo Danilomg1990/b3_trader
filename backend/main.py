@@ -6,26 +6,24 @@ from sqlalchemy.orm import Session
 from datetime import date, timedelta
 from typing import List
 import pandas as pd
+import numpy as np
 import os
 
-# Importações locais (seus arquivos)
+# Importações locais
 from . import services, models, database, ml_engine
 
-# 1. Cria tabelas no banco de dados (se não existirem)
+# Cria tabelas no banco de dados (se não existirem)
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="B3 AI Trader V4")
+app = FastAPI(title="B3 AI Trader V5 - Ensemble & Candles")
 
 # --- CONFIGURAÇÃO DE PASTAS ---
-# Garante que acha a pasta 'frontend' independente de onde o script roda
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 frontend_path = os.path.join(base_dir, "frontend")
 
-# Monta arquivos estáticos (HTML/CSS/JS) para acesso pelo navegador
 if os.path.exists(frontend_path):
     app.mount("/app", StaticFiles(directory=frontend_path, html=True), name="frontend")
 
-# Configuração de CORS (Permitir acesso do navegador)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -33,20 +31,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- ROTAS GERAIS ---
-
 @app.get("/")
 def read_root():
-    """Redireciona a raiz (http://localhost:8000/) para a aplicação (/app/)"""
     return RedirectResponse(url="/app/")
 
-# --- FUNÇÃO AUXILIAR: AUDITORIA ---
+# --- AUDITORIA ---
 def audit_predictions(db: Session, ticker: str):
-    """
-    Verifica se previsões passadas acertaram ou erraram
-    baseado nos dados reais que acabaram de chegar via Sync.
-    """
-    # Busca previsões que já venceram (target_date <= hoje) e ainda não têm resultado real (actual_close == None)
+    """Verifica acertos de previsões passadas."""
     pending = db.query(models.Prediction).filter(
         models.Prediction.ticker == ticker,
         models.Prediction.target_date <= date.today(),
@@ -55,25 +46,18 @@ def audit_predictions(db: Session, ticker: str):
     
     count = 0
     for p in pending:
-        # Busca o preço real que aconteceu naquele dia histórico
         history = db.query(models.StockHistory).filter(
             models.StockHistory.ticker == ticker,
             models.StockHistory.date == p.target_date
         ).first()
         
         if history:
-            # Atualiza a tabela com a verdade
             p.actual_close = history.close
-            
-            # Checa erro percentual do preço (Regressão)
             diff = abs(p.predicted_price - history.close)
             p.error_pct = (diff / history.close) * 100
-            
-            # Checa se o acerto foi bom (Erro menor que 2%)
+            # Considera acerto se erro < 2% (pode ajustar esse critério)
             p.is_correct = "✅" if p.error_pct < 2.0 else "❌"
-            
             count += 1
-    
     db.commit()
     return count
 
@@ -81,17 +65,16 @@ def audit_predictions(db: Session, ticker: str):
 
 @app.post("/sync/{ticker}")
 def sync_stock_data(ticker: str, db: Session = Depends(database.get_db)):
-    """Baixa dados novos da B3, salva no banco e roda a auditoria"""
+    """Baixa dados da B3 e audita histórico."""
     hist = services.fetch_stock_history(ticker)
     
     if hist is None or hist.empty:
-        raise HTTPException(status_code=404, detail="Ação não encontrada ou sem dados na B3.")
+        raise HTTPException(status_code=404, detail="Ação não encontrada ou sem dados.")
 
-    # Limpa dados antigos para evitar duplicidade e garantir frescor
+    # Limpa dados antigos para evitar duplicidade
     db.query(models.StockHistory).filter(models.StockHistory.ticker == ticker).delete()
     
     data_list = []
-    # Itera sobre o DataFrame
     for _, row in hist.iterrows():
         data_list.append(models.StockHistory(
             ticker=ticker,
@@ -106,80 +89,111 @@ def sync_stock_data(ticker: str, db: Session = Depends(database.get_db)):
     db.add_all(data_list)
     db.commit()
     
-    # Roda a auditoria nas previsões antigas agora que temos dados novos
     audited_count = audit_predictions(db, ticker)
-    
-    return {"message": f"Dados atualizados com sucesso. {audited_count} previsões antigas foram conferidas."}
-
+    return {"message": f"Dados atualizados. {audited_count} previsões conferidas."}
 
 @app.get("/analyze/{ticker}")
 def analyze_stock(
     ticker: str, 
     days: int = 5, 
-    # Recebe lista de indicadores da URL (ex: &indicators=RSI&indicators=MACD...)
-    indicators: List[str] = Query(["RSI", "MACD"]), 
+    timeframe: str = Query("D", description="D=Diario, W=Semanal, M=Mensal, Y=Anual"), 
+    indicators: List[str] = Query(["VWAP", "OBV"]), 
     db: Session = Depends(database.get_db)
 ):
-    """Gera nova previsão usando os indicadores selecionados e salva no banco"""
+    """Gera previsão com Ensemble Learning e prepara gráfico Candle."""
     
-    # 1. Busca Histórico do Banco
+    # 1. Busca do Banco
     records = db.query(models.StockHistory).filter(models.StockHistory.ticker == ticker).order_by(models.StockHistory.date).all()
     
     if not records:
         raise HTTPException(status_code=404, detail="Dados não encontrados. Execute /sync primeiro.")
 
-    # 2. Converte para DataFrame (BLINDAGEM CONTRA ERRO SQLALCHEMY)
-    # Isso evita o erro 'UnmappedInstanceError' ao manipular os objetos depois
+    # 2. Prepara DataFrame com Data como Index para Resampling
     data = [r.__dict__.copy() for r in records]
-    for d in data:
-        d.pop('_sa_instance_state', None)
+    for d in data: d.pop('_sa_instance_state', None)
     
     df = pd.DataFrame(data)
-    
-    # 3. Roda a Inteligência Artificial (Passando os indicadores escolhidos)
+    df['date'] = pd.to_datetime(df['date'])
+    df.set_index('date', inplace=True)
+
+    # 3. Lógica de Timeframe (Resampling)
+    if timeframe != 'D':
+        logic = {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}
+        
+        # Mapeamento de pandas (ME = Month End, YE = Year End no pandas novo, ou M/Y no antigo)
+        try:
+            if timeframe == 'W': df = df.resample('W').agg(logic)
+            elif timeframe == 'M': df = df.resample('ME').agg(logic) 
+            elif timeframe == 'Y': df = df.resample('YE').agg(logic)
+        except ValueError:
+            # Fallback para pandas antigo se ME/YE falhar
+            if timeframe == 'M': df = df.resample('M').agg(logic)
+            elif timeframe == 'Y': df = df.resample('A').agg(logic)
+            
+        df.dropna(inplace=True)
+
+    df.reset_index(inplace=True)
+
+    # 4. Cálculo de Indicadores e IA
+    df = ml_engine.calculate_institutional_indicators(df)
     result = ml_engine.analyze_full(df, days_ahead=days, selected_features=indicators)
     
     if not result:
-        # Se não tiver dados suficientes (ex: < 210 linhas para SMA 200)
-        raise HTTPException(status_code=400, detail="Dados insuficientes para IA calcular os indicadores (mínimo ~210 dias úteis).")
+        raise HTTPException(status_code=400, detail="Dados insuficientes para análise neste timeframe.")
 
-    # 4. Salva a Previsão (Prediction) no Banco para auditoria futura
-    last_date = df.iloc[-1]['date']
-    target_dt = last_date + timedelta(days=days)
-    
-    # Converte a lista de indicadores para string (ex: "RSI, MACD") para salvar no banco
-    indicators_str = ", ".join(indicators)
+    # 5. Salvar Previsão (Apenas se for Diário para consistência da auditoria)
+    if timeframe == 'D':
+        last_date = df.iloc[-1]['date'].date()
+        target_dt = last_date + timedelta(days=days)
+        indicators_str = ", ".join(indicators)
+        
+        existing = db.query(models.Prediction).filter(
+            models.Prediction.ticker == ticker,
+            models.Prediction.created_at == last_date,
+            models.Prediction.target_date == target_dt,
+            models.Prediction.indicators == indicators_str
+        ).first()
+        
+        if not existing:
+            new_pred = models.Prediction(
+                ticker=ticker,
+                created_at=last_date,
+                target_date=target_dt,
+                predicted_signal=result['signal'],
+                predicted_price=result['predicted_price'],
+                confidence=result['confidence'],
+                indicators=indicators_str
+            )
+            db.add(new_pred)
+            db.commit()
 
-    # Verifica se já não salvamos essa previsão hoje (evita duplicatas)
-    existing = db.query(models.Prediction).filter(
-        models.Prediction.ticker == ticker,
-        models.Prediction.created_at == last_date,
-        models.Prediction.target_date == target_dt,
-        models.Prediction.indicators == indicators_str # Diferencia se mudou a estratégia
-    ).first()
-    
-    if not existing:
-        new_pred = models.Prediction(
-            ticker=ticker,
-            created_at=last_date,
-            target_date=target_dt,
-            predicted_signal=result['signal'],
-            predicted_price=result['predicted_price'],
-            confidence=result['confidence'],
-            indicators=indicators_str # Salva os indicadores usados
-        )
-        db.add(new_pred)
-        db.commit()
-
-    # 5. Prepara o Retorno para o Frontend
     current_price = df.iloc[-1]['close']
     variation = ((result['predicted_price'] - current_price) / current_price) * 100
     
-    chart_data = {
-        "dates": [d.isoformat() for d in df['date']],
-        "prices": df['close'].tolist()
-    }
-    
+    # 6. Preparar Dados para ApexCharts (Candles + Linhas)
+    candles = []
+    vwap_line = []
+    bb_upper = []
+    bb_lower = []
+
+    for index, row in df.iterrows():
+        ts = int(row['date'].timestamp() * 1000) # Timestamp JS
+        
+        # Vela
+        candles.append({
+            "x": ts,
+            "y": [row['open'], row['high'], row['low'], row['close']]
+        })
+        
+        # Indicadores (Tratamento de NaN para null do JSON)
+        vwap_val = None if np.isnan(row['VWAP']) else row['VWAP']
+        bbu_val = None if np.isnan(row['BB_Upper']) else row['BB_Upper']
+        bbl_val = None if np.isnan(row['BB_Lower']) else row['BB_Lower']
+        
+        vwap_line.append({"x": ts, "y": vwap_val})
+        bb_upper.append({"x": ts, "y": bbu_val})
+        bb_lower.append({"x": ts, "y": bbl_val})
+
     return {
         "ticker": ticker,
         "current_price": current_price,
@@ -187,19 +201,22 @@ def analyze_stock(
         "confidence": f"{result['confidence']*100:.1f}%",
         "predicted_price": round(result['predicted_price'], 2),
         "variation_pct": round(variation, 2),
-        "chart_data": chart_data,
+        "chart_data": {
+            "candles": candles,
+            "vwap": vwap_line,
+            "bb_upper": bb_upper,
+            "bb_lower": bb_lower
+        },
         "used_features": result.get('used_features', [])
     }
 
 @app.get("/history/stats")
 def get_global_stats(db: Session = Depends(database.get_db)):
-    """Retorna estatísticas consolidadas de acerto de todas as ações"""
     predictions = db.query(models.Prediction).filter(
         models.Prediction.actual_close != None
     ).all()
     
     stats = {}
-    
     for p in predictions:
         if p.ticker not in stats:
             stats[p.ticker] = {"total": 0, "correct": 0, "error_sum": 0, "conf_sum": 0}
@@ -224,13 +241,11 @@ def get_global_stats(db: Session = Depends(database.get_db)):
                 "avg_confidence": round((data["conf_sum"] / total) * 100, 1)
             })
     
-    # Ordena por acurácia (maior primeiro)
     result.sort(key=lambda x: x['accuracy'], reverse=True)
     return result
 
 @app.get("/history/log")
 def get_history_log(db: Session = Depends(database.get_db)):
-    """Retorna todas as pesquisas feitas (Log Detalhado), da mais recente para a antiga"""
     logs = db.query(models.Prediction).order_by(
         models.Prediction.created_at.desc(), 
         models.Prediction.id.desc()
@@ -244,7 +259,7 @@ def get_history_log(db: Session = Depends(database.get_db)):
             "ticker": log.ticker,
             "predicted": log.predicted_price,
             "real": log.actual_close,
-            "result": log.is_correct if log.is_correct else "⏳ Aguardando",
-            "indicators": log.indicators if log.indicators else "Padrão" # Envia pro frontend
+            "result": log.is_correct if log.is_correct else "⏳",
+            "indicators": log.indicators
         })
     return result
