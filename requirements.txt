@@ -1,7 +1,32 @@
-fastapi
-uvicorn
-sqlalchemy
-yfinance
-pandas
-scikit-learn
-numpy
+# ===================================
+# DMG B3 Trader Pro - Requirements
+# ===================================
+
+# Framework Web
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# Banco de Dados
+sqlalchemy==2.0.35
+alembic==1.13.3
+
+# Análise de Dados
+pandas==2.2.3
+numpy==1.26.4
+
+# Machine Learning
+scikit-learn==1.5.2
+
+# Mercado Financeiro
+yfinance==0.2.48
+
+# Validação e Parsing
+pydantic==2.9.2
+python-multipart==0.0.12
+
+# Utilitários
+python-dateutil==2.9.0
+pytz==2024.2
+
+# Servidor ASGI (Produção)
+gunicorn==23.0.0

@@ -9,7 +9,8 @@
   </head>
   <body class="bg-gray-900 text-white font-sans antialiased">
     <div class="container mx-auto p-5 max-w-6xl">
-      <header class="mb-8 text-center">
+      <!-- HEADER -->
+      <header class="mb-8 text-center relative">
         <h1
           class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600"
         >
@@ -18,8 +19,24 @@
         <p class="text-gray-400 mt-2">
           Plataforma de Inteligência Institucional
         </p>
+        <div class="absolute top-0 right-0 flex gap-2">
+          <a
+            href="/app/market.html"
+            class="bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg border border-yellow-500 transition shadow flex items-center gap-2 text-sm font-bold"
+          >
+            <span>📈 Mercado B3</span>
+          </a>
+
+          <a
+            href="/app/history.html"
+            class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-4 py-2 rounded-lg border border-gray-600 transition shadow text-sm"
+          >
+            <span>🗂️ Histórico</span>
+          </a>
+        </div>
       </header>
 
+      <!-- SEÇÃO 1: CONSULTA RÁPIDA -->
       <div
         class="bg-gray-800 p-6 rounded-2xl shadow-xl mb-8 border border-gray-700"
       >
@@ -36,21 +53,22 @@
             <input
               type="text"
               id="quoteInput"
-              placeholder="Ex: VALE3"
-              class="w-full p-3 rounded bg-gray-900 border border-gray-600 text-white font-bold"
+              placeholder="Ex: VALE3, PETR4, ITUB4"
+              class="w-full p-3 rounded bg-gray-900 border border-gray-600 text-white font-bold uppercase focus:border-yellow-500 focus:outline-none transition"
             />
           </div>
           <button
             onclick="getQuote()"
-            class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 px-6 rounded transition"
+            class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 px-6 rounded transition shadow-lg active:scale-95"
           >
             Consultar
           </button>
         </div>
 
+        <!-- RESULTADO DA CONSULTA -->
         <div
           id="quoteResult"
-          class="hidden mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-900 p-4 rounded-xl border border-gray-700"
+          class="hidden mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-900 p-4 rounded-xl border border-gray-700 animate-fade-in"
         >
           <div class="text-center">
             <p class="text-xs text-gray-500">Preço Atual</p>
@@ -71,6 +89,7 @@
         </div>
       </div>
 
+      <!-- SEÇÃO 2: LABORATÓRIO IA -->
       <div
         class="bg-gray-800 p-6 rounded-2xl shadow-2xl mb-6 border border-gray-700 relative overflow-hidden"
       >
@@ -85,6 +104,7 @@
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <!-- ATIVO -->
           <div>
             <label class="text-xs text-gray-400 font-bold uppercase"
               >Ativo Alvo</label
@@ -93,41 +113,49 @@
               type="text"
               id="tickerInput"
               placeholder="PETR4"
-              class="w-full p-3 rounded bg-gray-900 border border-gray-600 text-white font-bold"
+              class="w-full p-3 rounded bg-gray-900 border border-gray-600 text-white font-bold uppercase focus:border-cyan-500 focus:outline-none transition"
             />
           </div>
+
+          <!-- HORIZONTE -->
           <div>
             <label class="text-xs text-gray-400 font-bold uppercase"
               >Horizonte</label
             >
             <select
               id="daysInput"
-              class="w-full p-3 rounded bg-gray-900 border border-gray-600 text-white"
+              class="w-full p-3 rounded bg-gray-900 border border-gray-600 text-white focus:border-cyan-500 focus:outline-none transition"
             >
               <option value="5">Curto (5 dias)</option>
               <option value="20">Médio (20 dias)</option>
               <option value="60">Longo (60 dias)</option>
             </select>
           </div>
+
+          <!-- GRÁFICO -->
           <div>
             <label class="text-xs text-gray-400 font-bold uppercase"
               >Gráfico</label
             >
             <select
               id="timeframeInput"
-              class="w-full p-3 rounded bg-gray-900 border border-gray-600 text-white"
+              class="w-full p-3 rounded bg-gray-900 border border-gray-600 text-white focus:border-cyan-500 focus:outline-none transition"
             >
               <option value="D">Diário</option>
               <option value="W">Semanal</option>
+              <option value="M">Mensal</option>
+              <option value="Y">Anual</option>
             </select>
           </div>
+
+          <!-- PERFIL IA -->
           <div>
             <label class="text-xs text-gray-400 font-bold uppercase"
               >Perfil IA</label
             >
             <select
               id="profileInput"
-              class="w-full p-3 rounded bg-gray-900 border border-pink-600 text-white font-bold"
+              class="w-full p-3 rounded bg-gray-900 border border-pink-600 text-white font-bold focus:border-pink-500 focus:outline-none transition"
             >
               <option value="JPM">🏛️ JP Morgan (Risk)</option>
               <option value="XP">🚀 XP (Trader)</option>
@@ -136,6 +164,7 @@
           </div>
         </div>
 
+        <!-- BOTÃO PRINCIPAL -->
         <button
           id="analyzeBtn"
           class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95"
@@ -144,6 +173,7 @@
         </button>
       </div>
 
+      <!-- BARRA DE LOADING -->
       <div id="loading" class="hidden flex flex-col items-center mt-12">
         <p
           id="loadingText"
@@ -156,11 +186,16 @@
         >
           <div
             id="loadingBar"
-            class="bg-cyan-500 h-6 rounded-full transition-all duration-300"
+            class="bg-gradient-to-r from-cyan-500 to-blue-500 h-6 rounded-full transition-all duration-300"
             style="width: 0%"
           ></div>
         </div>
       </div>
+
+      <!-- FOOTER -->
+      <footer class="mt-12 text-center text-gray-500 text-sm">
+        <p>DMG Trading Systems © 2025 | Powered by AI</p>
+      </footer>
     </div>
 
     <script src="/static/js/script.js"></script>

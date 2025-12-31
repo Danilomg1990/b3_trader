@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detalhes da Carteira</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="bg-gray-900 text-white font-sans antialiased">
+    <div class="container mx-auto p-5 max-w-6xl">
+      <header class="flex justify-between items-center mb-6">
+        <div>
+          <h1 id="pName" class="text-3xl font-bold text-white">
+            Carregando...
+          </h1>
+          <p class="text-gray-400 text-sm">Acompanhamento em Tempo Real</p>
+        </div>
+        <a
+          href="/app/portfolios.html"
+          class="bg-gray-800 px-4 py-2 rounded text-sm"
+          >← Carteiras</a
+        >
+      </header>
+
+      <div
+        class="bg-gray-800 p-4 rounded-xl mb-6 flex flex-col md:flex-row gap-4 items-end border border-gray-700"
+      >
+        <div class="w-full md:w-32">
+          <label class="text-xs text-gray-400 font-bold">Ativo</label>
+          <input
+            type="text"
+            id="addTicker"
+            placeholder="PETR4"
+            class="w-full p-2 rounded bg-gray-900 border border-gray-600 text-white uppercase"
+          />
+        </div>
+        <div class="w-full md:w-32">
+          <label class="text-xs text-gray-400 font-bold">Preço Médio</label>
+          <input
+            type="number"
+            id="addPrice"
+            placeholder="30.50"
+            step="0.01"
+            class="w-full p-2 rounded bg-gray-900 border border-gray-600 text-white"
+          />
+        </div>
+        <button
+          onclick="addAsset()"
+          class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded transition h-10"
+        >
+          + Adicionar
+        </button>
+      </div>
+
+      <div
+        class="bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-700"
+      >
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-gray-750 text-gray-400 uppercase text-xs">
+            <tr>
+              <th class="p-4">Ativo</th>
+              <th class="p-4 text-right">Preço Médio</th>
+              <th class="p-4 text-right">Preço Atual</th>
+              <th class="p-4 text-right">Min 52S</th>
+              <th class="p-4 text-right">Max 52S</th>
+              <th class="p-4 text-right">Resultado</th>
+              <th class="p-4 text-center">Ação</th>
+            </tr>
+          </thead>
+          <tbody
+            id="assetsTable"
+            class="divide-y divide-gray-700 text-sm"
+          ></tbody>
+        </table>
+      </div>
+    </div>
+    <script src="/static/js/portfolios.js"></script>
+  </body>
+</html>

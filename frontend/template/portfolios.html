@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestão de Carteiras</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="bg-gray-900 text-white font-sans antialiased">
+    <div class="container mx-auto p-5 max-w-4xl">
+      <header
+        class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4"
+      >
+        <h1 class="text-3xl font-bold text-blue-400">
+          💼 Gestão de Patrimônio
+        </h1>
+        <a href="/app/market.html" class="bg-gray-800 px-4 py-2 rounded text-sm"
+          >← Voltar</a
+        >
+      </header>
+
+      <div
+        class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700 flex gap-4 items-end"
+      >
+        <div class="flex-1">
+          <label class="text-xs text-gray-400 font-bold uppercase"
+            >Nome da Nova Carteira</label
+          >
+          <input
+            type="text"
+            id="newPortfolioName"
+            placeholder="Ex: Carteira do Pai"
+            class="w-full p-3 rounded bg-gray-900 border border-gray-600 text-white"
+          />
+        </div>
+        <button
+          onclick="createPortfolio()"
+          class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded transition"
+        >
+          + Criar
+        </button>
+      </div>
+
+      <h2 class="text-xl font-bold text-gray-300 mb-4">
+        Selecione uma Carteira:
+      </h2>
+      <div
+        id="portfolioList"
+        class="grid grid-cols-1 md:grid-cols-2 gap-4"
+      ></div>
+    </div>
+    <script src="/static/js/portfolios.js"></script>
+  </body>
+</html>
