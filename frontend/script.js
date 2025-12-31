@@ -1,25 +1,20 @@
-// Configuração da URL da API (Backend local)
+// Configuração da URL da API
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-// Variável global para guardar a instância do gráfico ApexCharts
 let chart = null;
+let progressInterval = null; // Variável para controlar a animação da barra
 
-// Inicialização: Aguarda o DOM carregar
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("analyzeBtn");
   const input = document.getElementById("tickerInput");
 
-  // Ouve o botão de analisar
   btn.addEventListener("click", analyzeStock);
-
-  // Permite apertar Enter no input para buscar
   input.addEventListener("keypress", (e) => {
     if (e.key === "Enter") analyzeStock();
   });
 });
 
 async function analyzeStock() {
-  // 1. Coleta de dados do usuário
   const tickerInput = document.getElementById("tickerInput");
   const daysInput = document.getElementById("daysInput");
   const timeframeInput = document.getElementById("timeframeInput");
@@ -30,105 +25,137 @@ async function analyzeStock() {
   const timeframe = timeframeInput.value;
   const chartType = chartTypeInput.value;
 
-  // Captura os Checkboxes marcados (Estratégia)
   const checkboxes = document.querySelectorAll(
     'input[name="indicators"]:checked'
   );
   let selectedIndicators = [];
-  checkboxes.forEach((checkbox) => {
-    selectedIndicators.push(checkbox.value);
-  });
+  checkboxes.forEach((c) => selectedIndicators.push(c.value));
 
-  // Validação
   if (!ticker) {
-    alert("Por favor, digite o código da ação (ex: PETR4, VALE3).");
+    alert("Digite o código da ação!");
     return;
   }
 
-  // 2. Controle de Interface (Loading)
+  // --- INÍCIO DO LOADING ---
   const loadingDiv = document.getElementById("loading");
   const resultDiv = document.getElementById("resultArea");
 
-  loadingDiv.classList.remove("hidden"); // Mostra spinner
-  resultDiv.classList.add("hidden"); // Esconde resultados antigos
+  loadingDiv.classList.remove("hidden");
+  resultDiv.classList.add("hidden");
+
+  // Inicia a Animação da Barra
+  startProgressBar();
 
   try {
-    // 3. Passo A: Sincronizar dados (Ingestão + Auditoria)
-    const syncResponse = await fetch(`${API_BASE_URL}/sync/${ticker}`, {
-      method: "POST",
-    });
+    // Passo 1: Sync (Dados)
+    await fetch(`${API_BASE_URL}/sync/${ticker}`, { method: "POST" });
 
-    if (!syncResponse.ok) {
-      throw new Error("Erro ao sincronizar dados com a B3.");
-    }
-
-    // 4. Passo B: Analisar (IA + Ensemble)
-    // Montamos a URL com todos os parâmetros
+    // Passo 2: Analyze (IA)
     const params = new URLSearchParams();
     params.append("days", days);
     params.append("timeframe", timeframe);
     selectedIndicators.forEach((ind) => params.append("indicators", ind));
 
-    const analyzeResponse = await fetch(
+    const res = await fetch(
       `${API_BASE_URL}/analyze/${ticker}?${params.toString()}`
     );
+    if (!res.ok) throw new Error("Erro na IA ou dados insuficientes");
 
-    if (!analyzeResponse.ok) {
-      throw new Error("Erro ao processar inteligência artificial.");
-    }
+    const data = await res.json();
 
-    const data = await analyzeResponse.json();
+    // --- SUCESSO ---
+    finishProgressBar(); // Enche a barra até 100%
 
-    // 5. Atualizar a tela e renderizar o gráfico
-    updateDashboard(data, days, timeframe, chartType);
-
-    // Mostra a div de resultados
-    resultDiv.classList.remove("hidden");
+    // Pequeno delay para o usuário ver o 100% antes de mostrar o resultado
+    setTimeout(() => {
+      updateDashboard(data, days, timeframe, chartType);
+      loadingDiv.classList.add("hidden");
+      resultDiv.classList.remove("hidden");
+    }, 600);
   } catch (error) {
-    console.error("Erro na aplicação:", error);
-    alert(`Ocorreu um erro: ${error.message}`);
-  } finally {
-    // Sempre esconde o loading
+    console.error(error);
+    alert(error.message);
     loadingDiv.classList.add("hidden");
+    stopProgressBar(); // Reseta se der erro
   }
 }
 
+// --- FUNÇÕES DA BARRA DE PROGRESSO ---
+
+function startProgressBar() {
+  const bar = document.getElementById("loadingBar");
+  const text = document.getElementById("loadingText");
+  let width = 0;
+
+  // Reseta estado inicial
+  bar.style.width = "0%";
+  text.innerText = "Iniciando conexão...";
+
+  // Limpa intervalo anterior se existir
+  if (progressInterval) clearInterval(progressInterval);
+
+  progressInterval = setInterval(() => {
+    // Aumenta a barra de forma aleatória para parecer natural
+    if (width < 90) {
+      width += Math.random() * 5;
+      if (width > 90) width = 90; // Trava em 90% até o servidor responder
+
+      bar.style.width = width + "%";
+
+      // Muda o texto baseado no progresso
+      if (width > 10 && width < 40) text.innerText = "Baixando Histórico B3...";
+      else if (width >= 40 && width < 70)
+        text.innerText = "Calculando Indicadores Institucionais...";
+      else if (width >= 70)
+        text.innerText = "Executando Ensemble Neural (IA)...";
+    }
+  }, 200); // Atualiza a cada 200ms
+}
+
+function finishProgressBar() {
+  if (progressInterval) clearInterval(progressInterval);
+  const bar = document.getElementById("loadingBar");
+  const text = document.getElementById("loadingText");
+
+  bar.style.width = "100%";
+  text.innerText = "Análise Concluída! 🚀";
+}
+
+function stopProgressBar() {
+  if (progressInterval) clearInterval(progressInterval);
+}
+
+// --- FUNÇÕES DE DASHBOARD E GRÁFICO (Mantidas iguais) ---
+
 function updateDashboard(data, days, timeframe, chartType) {
-  // Formatador de Moeda (R$)
   const fmt = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
 
-  // --- Atualiza os Cards Superiores ---
-
-  // 1. Sinal da IA
   const signalEl = document.getElementById("aiSignal");
   signalEl.innerText = data.signal;
 
-  // Cores do Sinal
-  if (data.signal.includes("COMPRA")) {
+  if (data.signal.includes("COMPRA"))
     signalEl.className =
       "text-3xl font-bold mt-2 text-green-400 drop-shadow-md";
-  } else if (data.signal.includes("VENDA")) {
+  else if (data.signal.includes("VENDA"))
     signalEl.className = "text-3xl font-bold mt-2 text-red-500 drop-shadow-md";
-  } else {
-    signalEl.className = "text-3xl font-bold mt-2 text-gray-400";
-  }
-  document.getElementById("aiConf").innerText = data.confidence;
+  else signalEl.className = "text-3xl font-bold mt-2 text-gray-400";
 
-  // 2. Preço Atual
+  document.getElementById("aiConf").innerText = data.confidence;
   document.getElementById("currPrice").innerText = fmt.format(
     data.current_price
   );
 
-  // 3. Previsão (Alvo)
-  // Ajusta o texto do prazo (dias, semanas, etc)
-  let timeLabel = "dias";
-  if (timeframe === "W") timeLabel = "semanas";
-  if (timeframe === "M") timeLabel = "meses";
-  if (timeframe === "Y") timeLabel = "anos";
-
+  let timeLabel =
+    timeframe === "D"
+      ? "dias"
+      : timeframe === "W"
+      ? "semanas"
+      : timeframe === "M"
+      ? "meses"
+      : "anos";
   document.getElementById("targetDays").innerText = days;
   document.getElementById("targetTimeframeLabel").innerText = timeLabel;
   document.getElementById("predPrice").innerText = fmt.format(
@@ -137,125 +164,90 @@ function updateDashboard(data, days, timeframe, chartType) {
 
   const varEl = document.getElementById("predVar");
   const arrow = data.variation_pct > 0 ? "▲" : "▼";
-  varEl.innerText = `${arrow} ${data.variation_pct.toFixed(2)}% (esperado)`;
-
+  varEl.innerText = `${arrow} ${data.variation_pct.toFixed(2)}%`;
   varEl.className =
     data.variation_pct > 0
       ? "text-sm font-bold mt-2 text-green-400"
       : "text-sm font-bold mt-2 text-red-400";
 
-  // 4. Histórico (Placeholder)
-  const historyListEl = document.getElementById("historyList");
-  historyListEl.innerHTML =
-    '<p class="text-gray-500 italic mt-2">Dados atualizados no gráfico.</p>';
+  document.getElementById("historyList").innerHTML =
+    '<p class="text-gray-500 italic">Gráfico atualizado.</p>';
 
-  // --- Renderiza o Gráfico Profissional (ApexCharts) ---
   renderApexChart(data.chart_data, data.ticker, chartType);
 }
 
 function renderApexChart(chartData, ticker, chartType) {
-  // Se já existe um gráfico, destrói para criar um novo limpo
-  if (chart) {
-    chart.destroy();
-  }
+  if (chart) chart.destroy();
 
-  // PREPARAÇÃO DOS DADOS
-  // O ApexCharts precisa de séries separadas.
-  // Se o usuário escolheu 'candlestick', usamos os dados OHLC.
-  // Se escolheu 'area' (linha), extraímos apenas o preço de Fechamento.
+  const cleanCandles = chartData.candles.map((c) => ({
+    x: c.x,
+    y: [
+      parseFloat(c.y[0].toFixed(2)),
+      parseFloat(c.y[1].toFixed(2)),
+      parseFloat(c.y[2].toFixed(2)),
+      parseFloat(c.y[3].toFixed(2)),
+    ],
+  }));
+
+  // Função segura para mapear indicadores
+  const mapSafe = (arr) =>
+    arr
+      ? arr.map((p) => ({ x: p.x, y: p.y ? parseFloat(p.y.toFixed(2)) : null }))
+      : [];
+
+  const cleanVWAP = mapSafe(chartData.vwap);
+  const cleanBBU = mapSafe(chartData.bb_upper);
+  const cleanBBL = mapSafe(chartData.bb_lower);
+  const cleanSMA14 = mapSafe(chartData.sma_14);
+  const cleanSMA50 = mapSafe(chartData.sma_50);
 
   let mainSeries = {};
-
   if (chartType === "candlestick") {
-    mainSeries = {
-      name: "Preço",
-      type: "candlestick",
-      data: chartData.candles,
-    };
+    mainSeries = { name: "Preço", type: "candlestick", data: cleanCandles };
   } else {
-    // Mapeia os candles para pegar apenas o fechamento (índice 3 do array y: [Open, High, Low, Close])
-    const lineData = chartData.candles.map((c) => ({
-      x: c.x,
-      y: c.y[3], // Pega o Close
-    }));
-
-    mainSeries = {
-      name: "Preço",
-      type: "area", // 'area' cria aquele efeito bonito com degradê embaixo da linha
-      data: lineData,
-    };
+    const lineData = cleanCandles.map((c) => ({ x: c.x, y: c.y[3] }));
+    mainSeries = { name: "Preço", type: "area", data: lineData };
   }
 
-  // CONFIGURAÇÃO DO GRÁFICO (OPÇÕES)
   const options = {
     series: [
-      mainSeries, // Série Principal (Vela ou Linha)
-      {
-        name: "VWAP",
-        type: "line",
-        data: chartData.vwap,
-      },
-      {
-        name: "BB Upper",
-        type: "line",
-        data: chartData.bb_upper,
-      },
-      {
-        name: "BB Lower",
-        type: "line",
-        data: chartData.bb_lower,
-      },
+      mainSeries,
+      { name: "VWAP", type: "line", data: cleanVWAP },
+      { name: "SMA 14", type: "line", data: cleanSMA14 },
+      { name: "SMA 50", type: "line", data: cleanSMA50 },
+      { name: "BB Upper", type: "line", data: cleanBBU },
+      { name: "BB Lower", type: "line", data: cleanBBL },
     ],
     chart: {
-      // O tipo base do gráfico muda conforme a seleção para ajustar comportamentos internos
       type: chartType === "candlestick" ? "candlestick" : "line",
       height: 500,
-      background: "#1F2937", // Fundo Dark (Gray-800 do Tailwind)
-      toolbar: {
-        show: true,
-        tools: {
-          download: true,
-          selection: true,
-          zoom: true,
-          zoomin: true,
-          zoomout: true,
-          pan: true,
-          reset: true,
-        },
-      },
-      animations: {
-        enabled: true,
-      },
+      background: "#1F2937",
+      toolbar: { show: true },
+      animations: { enabled: true },
     },
     title: {
       text: `${ticker} - Análise Quantitativa`,
       align: "left",
-      style: {
-        color: "#fff",
-        fontSize: "16px",
-        fontFamily: "sans-serif",
-      },
+      style: { color: "#fff", fontSize: "16px" },
     },
-    // Estilo das Linhas
     stroke: {
-      // Define a espessura: [Principal, VWAP, BBUpper, BBLower]
-      // Se for Candle, a linha principal é 1px (contorno). Se for Linha, é 2px.
-      width: [chartType === "candlestick" ? 1 : 2, 2, 1, 1],
-      curve: "smooth", // Suaviza as linhas de médias
-      dashArray: [0, 5, 0, 0], // VWAP tracejada (5px linha, 5px espaço)
+      width: [chartType === "candlestick" ? 1 : 2, 2, 2, 2, 1, 1],
+      curve: "smooth",
+      dashArray: [0, 5, 0, 0, 0, 0],
     },
-    // Cores das Séries
     colors: [
-      chartType === "candlestick" ? "#00E396" : "#2E93fA", // Verde (Candle) ou Azul (Linha)
-      "#FEB019", // VWAP Laranja Neon
-      "#775DD0", // Bollinger Roxo
-      "#775DD0", // Bollinger Roxo
+      chartType === "candlestick" ? "#00E396" : "#2E93fA",
+      "#FEB019",
+      "#EC4899",
+      "#3B82F6",
+      "#775DD0",
+      "#775DD0",
     ],
-    // Preenchimento
     fill: {
-      // Candle é solido. Area é gradiente. Linhas são solidas.
       type: [
         chartType === "candlestick" ? "solid" : "gradient",
+        "solid",
+        "solid",
         "solid",
         "solid",
         "solid",
@@ -263,67 +255,41 @@ function renderApexChart(chartData, ticker, chartType) {
       gradient: {
         shadeIntensity: 1,
         opacityFrom: 0.5,
-        opacityTo: 0.05, // Faz o degradê sumir no final
+        opacityTo: 0.05,
         stops: [0, 100],
       },
     },
-    // Eixo X (Tempo)
     xaxis: {
       type: "datetime",
-      labels: {
-        style: { colors: "#9CA3AF" }, // Cor do texto (Cinza claro)
-      },
-      tooltip: {
-        enabled: true,
-      },
+      labels: { style: { colors: "#9CA3AF" } },
+      tooltip: { enabled: true },
     },
-    // Eixo Y (Preço)
     yaxis: {
-      tooltip: {
-        enabled: true,
-      },
+      tooltip: { enabled: true },
       labels: {
         style: { colors: "#9CA3AF" },
-        // FORMATAÇÃO IMPORTANTE: Força 2 casas decimais no eixo Y
-        formatter: (value) => {
-          return value ? value.toFixed(2) : value;
+        formatter: (val) => {
+          return val ? val.toFixed(2) : val;
         },
       },
     },
-    grid: {
-      borderColor: "#374151", // Linhas de grade sutis
-      strokeDashArray: 4,
-    },
-    theme: {
-      mode: "dark", // Tema escuro nativo do ApexCharts
-    },
-    // Tooltip (Caixinha que aparece ao passar o mouse)
+    grid: { borderColor: "#374151", strokeDashArray: 4 },
+    theme: { mode: "dark" },
     tooltip: {
       theme: "dark",
-      shared: true, // Mostra todos os valores juntos
+      shared: true,
       intersect: false,
       y: {
-        // FORMATAÇÃO IMPORTANTE: Força R$ 0,00 no Tooltip
         formatter: function (val) {
           return val ? "R$ " + val.toFixed(2) : val;
         },
       },
     },
-    // Configuração Específica para Velas (Cores Brasileiras: Verde/Vermelho)
     plotOptions: {
-      candlestick: {
-        colors: {
-          upward: "#00E396", // Verde Alta
-          downward: "#FF4560", // Vermelho Baixa
-        },
-        wick: {
-          useFillColor: true,
-        },
-      },
+      candlestick: { colors: { upward: "#00E396", downward: "#FF4560" } },
     },
   };
 
-  // Cria e renderiza o gráfico na div #stockChart
   chart = new ApexCharts(document.querySelector("#stockChart"), options);
   chart.render();
 }

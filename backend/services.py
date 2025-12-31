@@ -3,10 +3,10 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime
 
-def fetch_stock_history(ticker: str, period: str = "2y"):
+def fetch_stock_history(ticker: str, period: str = "max"): # <--- MUDANÇA AQUI: de "2y" para "max"
     """
     Busca dados históricos da B3 usando o yfinance.
-    Adiciona o sufixo .SA automaticamente se não estiver presente.
+    Baixa o histórico COMPLETO ('max') para permitir análise semanal/mensal com SMA 200.
     """
     # Garante que o ticker tenha o formato da B3 (ex: PETR4.SA)
     if not ticker.endswith(".SA"):
@@ -16,7 +16,8 @@ def fetch_stock_history(ticker: str, period: str = "2y"):
 
     try:
         stock = yf.Ticker(full_ticker)
-        # Baixa o histórico
+        
+        # Baixa o histórico máximo disponível
         history = stock.history(period=period)
         
         if history.empty:

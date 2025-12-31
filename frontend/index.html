@@ -3,315 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DMG B3 AI Trader V5 - Pro</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body
-    class="bg-gray-900 text-white font-sans antialiased selection:bg-cyan-500 selection:text-white"
-  >
-    <div class="container mx-auto p-5 max-w-6xl">
-      <header class="mb-8 text-center">
-        <h1
-          class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 tracking-tight"
-        >
-          DMG B3 AI Trader 🚀
-        </h1>
-        <p class="text-gray-400 mt-2 text-lg">
-          Laboratório Quantitativo & Trading System
-        </p>
-        <div class="mt-4">
-          <a
-            href="history.html"
-            class="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 underline transition cursor-pointer group"
-          >
-            <span>📊 Ver Relatório de Performance</span>
-            <span class="group-hover:translate-x-1 transition-transform"
-              >→</span
-            >
-          </a>
-        </div>
-      </header>
-
-      <div
-        class="bg-gray-800 p-6 rounded-2xl shadow-2xl mb-6 border border-gray-700 relative overflow-hidden"
-      >
-        <div
-          class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-cyan-500 rounded-full opacity-10 blur-xl"
-        ></div>
-
-        <div
-          class="flex flex-col md:flex-row justify-center items-end gap-5 relative z-10"
-        >
-          <div class="w-full md:w-auto flex-1">
-            <label
-              class="block text-gray-400 text-xs uppercase font-bold mb-1 ml-1 tracking-wider"
-              >Ativo</label
-            >
-            <input
-              type="text"
-              id="tickerInput"
-              placeholder="Ex: VALE3"
-              class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white placeholder-gray-600 uppercase font-bold text-lg focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition shadow-inner"
-            />
-          </div>
-
-          <div class="w-full md:w-32">
-            <label
-              class="block text-gray-400 text-xs uppercase font-bold mb-1 ml-1 tracking-wider"
-              >Previsão</label
-            >
-            <input
-              type="number"
-              id="daysInput"
-              value="5"
-              min="1"
-              max="30"
-              class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white font-bold text-lg text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-inner"
-            />
-          </div>
-
-          <div class="w-full md:w-auto">
-            <label
-              class="block text-gray-400 text-xs uppercase font-bold mb-1 ml-1 tracking-wider"
-              >Tempo</label
-            >
-            <select
-              id="timeframeInput"
-              class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white font-bold text-lg focus:outline-none focus:border-purple-500 transition cursor-pointer"
-            >
-              <option value="D">Diário</option>
-              <option value="W">Semanal</option>
-              <option value="M">Mensal</option>
-              <option value="Y">Anual</option>
-            </select>
-          </div>
-
-          <button
-            id="analyzeBtn"
-            class="w-full md:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 px-10 rounded-xl shadow-lg transform active:scale-95 transition duration-200 border border-cyan-500/30"
-          >
-            Processar IA
-          </button>
-        </div>
-      </div>
-
-      <div
-        class="bg-gray-800 p-5 rounded-xl shadow-lg mb-8 border border-gray-700"
-      >
-        <p
-          class="text-xs text-gray-400 uppercase font-bold mb-4 border-b border-gray-700 pb-2 flex items-center gap-2"
-        >
-          <span class="text-lg">⚙️</span> Rede Neural (Ensemble Learning):
-        </p>
-        <div
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-sm select-none"
-        >
-          <label
-            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-cyan-500 transition group"
-          >
-            <input
-              type="checkbox"
-              name="indicators"
-              value="VWAP"
-              checked
-              class="accent-cyan-500 w-4 h-4 cursor-pointer"
-            />
-            <span class="font-bold text-cyan-400 group-hover:text-cyan-300"
-              >VWAP (Bancos)</span
-            >
-          </label>
-          <label
-            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-cyan-500 transition group"
-          >
-            <input
-              type="checkbox"
-              name="indicators"
-              value="OBV"
-              checked
-              class="accent-cyan-500 w-4 h-4 cursor-pointer"
-            />
-            <span class="group-hover:text-cyan-300">OBV (Fluxo)</span>
-          </label>
-          <label
-            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-cyan-500 transition group"
-          >
-            <input
-              type="checkbox"
-              name="indicators"
-              value="MFI"
-              class="accent-cyan-500 w-4 h-4 cursor-pointer"
-            />
-            <span class="group-hover:text-cyan-300">MFI (Dinheiro)</span>
-          </label>
-          <label
-            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-green-500 transition group"
-          >
-            <input
-              type="checkbox"
-              name="indicators"
-              value="RSI"
-              checked
-              class="accent-green-500 w-4 h-4 cursor-pointer"
-            />
-            <span class="group-hover:text-green-300">RSI (14)</span>
-          </label>
-          <label
-            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-green-500 transition group"
-          >
-            <input
-              type="checkbox"
-              name="indicators"
-              value="MACD"
-              checked
-              class="accent-green-500 w-4 h-4 cursor-pointer"
-            />
-            <span class="group-hover:text-green-300">MACD</span>
-          </label>
-          <label
-            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-purple-500 transition group"
-          >
-            <input
-              type="checkbox"
-              name="indicators"
-              value="SMA_200"
-              checked
-              class="accent-purple-500 w-4 h-4 cursor-pointer"
-            />
-            <span class="font-bold text-purple-400 group-hover:text-purple-300"
-              >Média 200</span
-            >
-          </label>
-          <label
-            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-orange-500 transition group"
-          >
-            <input
-              type="checkbox"
-              name="indicators"
-              value="BB_Upper"
-              checked
-              class="accent-orange-500 w-4 h-4 cursor-pointer"
-            />
-            <span class="group-hover:text-orange-300">Bollinger Topo</span>
-          </label>
-          <label
-            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-orange-500 transition group"
-          >
-            <input
-              type="checkbox"
-              name="indicators"
-              value="BB_Lower"
-              checked
-              class="accent-orange-500 w-4 h-4 cursor-pointer"
-            />
-            <span class="group-hover:text-orange-300">Bollinger Fundo</span>
-          </label>
-        </div>
-      </div>
-
-      <div
-        id="loading"
-        class="hidden flex flex-col items-center mt-12 animate-pulse"
-      >
-        <div class="loader mb-6"></div>
-        <p class="text-xl font-medium text-cyan-400">
-          Analisando Timeframes & Executando Ensemble...
-        </p>
-        <p class="text-sm text-gray-500 mt-2">
-          Combinando Gradient Boosting, Random Forest e Extra Trees.
-        </p>
-      </div>
-
-      <div id="resultArea" class="hidden animate-fade-in">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div
-            class="bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-purple-500 hover:bg-gray-750 transition transform hover:-translate-y-1"
-          >
-            <h3 class="text-xs text-gray-400 uppercase font-bold">
-              Consenso IA
-            </h3>
-            <p id="aiSignal" class="text-3xl font-bold mt-2 truncate">--</p>
-            <p class="text-xs text-gray-500 mt-2">
-              Confiança:
-              <span id="aiConf" class="text-gray-300 font-mono">--</span>
-            </p>
-          </div>
-          <div
-            class="bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-yellow-500 hover:bg-gray-750 transition transform hover:-translate-y-1"
-          >
-            <h3 class="text-xs text-gray-400 uppercase font-bold">
-              Preço Atual
-            </h3>
-            <p
-              id="currPrice"
-              class="text-3xl font-bold text-white mt-2 font-mono"
-            >
-              --
-            </p>
-            <p class="text-xs text-gray-500 mt-2">Fechamento</p>
-          </div>
-          <div
-            class="bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:bg-gray-750 transition transform hover:-translate-y-1"
-          >
-            <h3 class="text-xs text-gray-400 uppercase font-bold">
-              Alvo (<span id="targetDays">--</span>
-              <span id="targetTimeframeLabel">dias</span>)
-            </h3>
-            <p
-              id="predPrice"
-              class="text-3xl font-bold text-blue-400 mt-2 font-mono"
-            >
-              --
-            </p>
-            <p id="predVar" class="text-sm font-bold mt-2">--</p>
-          </div>
-          <div
-            class="bg-gray-800 p-5 rounded-xl shadow-lg border-l-4 border-gray-500 overflow-hidden"
-          >
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-xs text-gray-400 uppercase font-bold">
-                Auditoria
-              </h3>
-              <span
-                class="text-[10px] bg-gray-700 px-2 py-1 rounded text-gray-300"
-                >Diário</span
-              >
-            </div>
-            <div
-              id="historyList"
-              class="text-xs space-y-2 max-h-24 overflow-y-auto pr-1 scrollbar-thin"
-            >
-              <p class="text-gray-600 italic">Sem histórico ainda.</p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="bg-gray-800 p-2 rounded-xl shadow-2xl border border-gray-700"
-        >
-          <div id="stockChart" style="height: 500px"></div>
-        </div>
-      </div>
-    </div>
-
-    <footer
-      class="text-center text-gray-600 text-sm py-6 border-t border-gray-800 mt-10"
-    >
-      &copy; 2025 DMG B3 AI Trader.
-    </footer>
-
-    <script src="script.js"></script>
-  </body>
-</html>
-<!DOCTYPE html>
-<html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DMG B3 AI Trader V6 - Investing Style</title>
+    <title>DMG B3 AI Trader V7</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -363,7 +55,7 @@
               type="text"
               id="tickerInput"
               placeholder="Ex: PETR4"
-              class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white placeholder-gray-600 uppercase font-bold text-lg focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition shadow-inner"
+              class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white placeholder-gray-600 uppercase font-bold text-lg focus:outline-none focus:border-cyan-500 transition shadow-inner"
             />
           </div>
 
@@ -377,8 +69,8 @@
               id="daysInput"
               value="5"
               min="1"
-              max="30"
-              class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white font-bold text-lg text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-inner"
+              max="90"
+              class="w-full p-4 rounded-xl bg-gray-900 border border-gray-600 text-white font-bold text-lg text-center focus:outline-none focus:border-blue-500 transition shadow-inner"
             />
           </div>
 
@@ -427,10 +119,10 @@
         <p
           class="text-xs text-gray-400 uppercase font-bold mb-4 border-b border-gray-700 pb-2 flex items-center gap-2"
         >
-          <span class="text-lg">⚙️</span> Rede Neural (Ensemble Learning):
+          <span class="text-lg">⚙️</span> Estratégia & Indicadores:
         </p>
         <div
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-sm select-none"
+          class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 text-sm select-none"
         >
           <label
             class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-cyan-500 transition group"
@@ -443,7 +135,7 @@
               class="accent-cyan-500 w-4 h-4 cursor-pointer"
             />
             <span class="font-bold text-cyan-400 group-hover:text-cyan-300"
-              >VWAP (Bancos)</span
+              >VWAP</span
             >
           </label>
           <label
@@ -456,7 +148,7 @@
               checked
               class="accent-cyan-500 w-4 h-4 cursor-pointer"
             />
-            <span class="group-hover:text-cyan-300">OBV (Fluxo)</span>
+            <span class="group-hover:text-cyan-300">OBV</span>
           </label>
           <label
             class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-cyan-500 transition group"
@@ -467,8 +159,38 @@
               value="MFI"
               class="accent-cyan-500 w-4 h-4 cursor-pointer"
             />
-            <span class="group-hover:text-cyan-300">MFI (Dinheiro)</span>
+            <span class="group-hover:text-cyan-300">MFI</span>
           </label>
+
+          <label
+            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-pink-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="SMA_14"
+              checked
+              class="accent-pink-500 w-4 h-4 cursor-pointer"
+            />
+            <span class="text-pink-400 font-bold group-hover:text-pink-300"
+              >Média 14</span
+            >
+          </label>
+          <label
+            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-blue-500 transition group"
+          >
+            <input
+              type="checkbox"
+              name="indicators"
+              value="SMA_50"
+              checked
+              class="accent-blue-500 w-4 h-4 cursor-pointer"
+            />
+            <span class="text-blue-400 font-bold group-hover:text-blue-300"
+              >Média 50</span
+            >
+          </label>
+
           <label
             class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-green-500 transition group"
           >
@@ -479,7 +201,7 @@
               checked
               class="accent-green-500 w-4 h-4 cursor-pointer"
             />
-            <span class="group-hover:text-green-300">RSI (14)</span>
+            <span class="group-hover:text-green-300">RSI</span>
           </label>
           <label
             class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-green-500 transition group"
@@ -507,6 +229,7 @@
               >Média 200</span
             >
           </label>
+
           <label
             class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-orange-500 transition group"
           >
@@ -517,33 +240,35 @@
               checked
               class="accent-orange-500 w-4 h-4 cursor-pointer"
             />
-            <span class="group-hover:text-orange-300">Bollinger Topo</span>
-          </label>
-          <label
-            class="flex items-center space-x-2 cursor-pointer bg-gray-900 p-2 rounded-lg border border-gray-700 hover:border-orange-500 transition group"
-          >
-            <input
-              type="checkbox"
-              name="indicators"
-              value="BB_Lower"
-              checked
-              class="accent-orange-500 w-4 h-4 cursor-pointer"
-            />
-            <span class="group-hover:text-orange-300">Bollinger Fundo</span>
+            <span class="group-hover:text-orange-300">Bollinger</span>
           </label>
         </div>
       </div>
 
-      <div
-        id="loading"
-        class="hidden flex flex-col items-center mt-12 animate-pulse"
-      >
-        <div class="loader mb-6"></div>
-        <p class="text-xl font-medium text-cyan-400">
-          Analisando Timeframes & Executando Ensemble...
+      <div id="loading" class="hidden flex flex-col items-center mt-12">
+        <p
+          id="loadingText"
+          class="text-xl font-bold text-cyan-400 mb-4 animate-pulse"
+        >
+          Iniciando protocolos...
         </p>
-        <p class="text-sm text-gray-500 mt-2">
-          Combinando Gradient Boosting, Random Forest e Extra Trees.
+
+        <div
+          class="w-full max-w-md bg-gray-700 rounded-full h-6 shadow-inner border border-gray-600 overflow-hidden relative"
+        >
+          <div
+            id="loadingBar"
+            class="bg-gradient-to-r from-cyan-500 to-blue-600 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.7)]"
+            style="width: 0%"
+          >
+            <div
+              class="w-full h-full absolute top-0 left-0 bg-white opacity-10 animate-pulse"
+            ></div>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-500 mt-3 font-mono">
+          Processando Big Data & Algoritmos Genéticos
         </p>
       </div>
 
@@ -561,6 +286,7 @@
               <span id="aiConf" class="text-gray-300 font-mono">--</span>
             </p>
           </div>
+
           <div
             class="bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-yellow-500 hover:bg-gray-750 transition transform hover:-translate-y-1"
           >
@@ -575,6 +301,7 @@
             </p>
             <p class="text-xs text-gray-500 mt-2">Fechamento</p>
           </div>
+
           <div
             class="bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:bg-gray-750 transition transform hover:-translate-y-1"
           >
@@ -590,6 +317,7 @@
             </p>
             <p id="predVar" class="text-sm font-bold mt-2">--</p>
           </div>
+
           <div
             class="bg-gray-800 p-5 rounded-xl shadow-lg border-l-4 border-gray-500 overflow-hidden"
           >

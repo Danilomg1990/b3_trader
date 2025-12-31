@@ -15,7 +15,7 @@ from . import services, models, database, ml_engine
 # Cria tabelas no banco de dados (se não existirem)
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="B3 AI Trader V5 - Ensemble & Candles")
+app = FastAPI(title="B3 AI Trader V7 - Institutional")
 
 # --- CONFIGURAÇÃO DE PASTAS ---
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -55,7 +55,7 @@ def audit_predictions(db: Session, ticker: str):
             p.actual_close = history.close
             diff = abs(p.predicted_price - history.close)
             p.error_pct = (diff / history.close) * 100
-            # Considera acerto se erro < 2% (pode ajustar esse critério)
+            # Considera acerto se erro < 2%
             p.is_correct = "✅" if p.error_pct < 2.0 else "❌"
             count += 1
     db.commit()
@@ -65,13 +65,13 @@ def audit_predictions(db: Session, ticker: str):
 
 @app.post("/sync/{ticker}")
 def sync_stock_data(ticker: str, db: Session = Depends(database.get_db)):
-    """Baixa dados da B3 e audita histórico."""
-    hist = services.fetch_stock_history(ticker)
+    """Baixa histórico MÁXIMO da B3 para permitir médias longas."""
+    hist = services.fetch_stock_history(ticker, period="max") # Força histórico máximo
     
     if hist is None or hist.empty:
         raise HTTPException(status_code=404, detail="Ação não encontrada ou sem dados.")
 
-    # Limpa dados antigos para evitar duplicidade
+    # Limpa dados antigos
     db.query(models.StockHistory).filter(models.StockHistory.ticker == ticker).delete()
     
     data_list = []
@@ -100,15 +100,13 @@ def analyze_stock(
     indicators: List[str] = Query(["VWAP", "OBV"]), 
     db: Session = Depends(database.get_db)
 ):
-    """Gera previsão com Ensemble Learning e prepara gráfico Candle."""
+    """Gera previsão e prepara dados para o gráfico avançado."""
     
     # 1. Busca do Banco
     records = db.query(models.StockHistory).filter(models.StockHistory.ticker == ticker).order_by(models.StockHistory.date).all()
-    
-    if not records:
-        raise HTTPException(status_code=404, detail="Dados não encontrados. Execute /sync primeiro.")
+    if not records: raise HTTPException(status_code=404, detail="Execute /sync primeiro.")
 
-    # 2. Prepara DataFrame com Data como Index para Resampling
+    # 2. Prepara DataFrame
     data = [r.__dict__.copy() for r in records]
     for d in data: d.pop('_sa_instance_state', None)
     
@@ -116,32 +114,30 @@ def analyze_stock(
     df['date'] = pd.to_datetime(df['date'])
     df.set_index('date', inplace=True)
 
-    # 3. Lógica de Timeframe (Resampling)
+    # 3. Timeframe Resampling (Transforma D para W/M/Y)
     if timeframe != 'D':
         logic = {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}
-        
-        # Mapeamento de pandas (ME = Month End, YE = Year End no pandas novo, ou M/Y no antigo)
         try:
             if timeframe == 'W': df = df.resample('W').agg(logic)
-            elif timeframe == 'M': df = df.resample('ME').agg(logic) 
+            elif timeframe == 'M': df = df.resample('ME').agg(logic)
             elif timeframe == 'Y': df = df.resample('YE').agg(logic)
-        except ValueError:
-            # Fallback para pandas antigo se ME/YE falhar
+        except:
+            # Fallback para pandas antigo
             if timeframe == 'M': df = df.resample('M').agg(logic)
             elif timeframe == 'Y': df = df.resample('A').agg(logic)
-            
         df.dropna(inplace=True)
 
     df.reset_index(inplace=True)
 
-    # 4. Cálculo de Indicadores e IA
+    # 4. Cálculo de Indicadores (ML Engine Inteligente)
+    # A função calcula apenas o que é possível (ex: ignora SMA_200 se não tiver dados)
     df = ml_engine.calculate_institutional_indicators(df)
     result = ml_engine.analyze_full(df, days_ahead=days, selected_features=indicators)
     
     if not result:
         raise HTTPException(status_code=400, detail="Dados insuficientes para análise neste timeframe.")
 
-    # 5. Salvar Previsão (Apenas se for Diário para consistência da auditoria)
+    # 5. Salvar Previsão (Apenas Diário por enquanto)
     if timeframe == 'D':
         last_date = df.iloc[-1]['date'].date()
         target_dt = last_date + timedelta(days=days)
@@ -170,14 +166,22 @@ def analyze_stock(
     current_price = df.iloc[-1]['close']
     variation = ((result['predicted_price'] - current_price) / current_price) * 100
     
-    # 6. Preparar Dados para ApexCharts (Candles + Linhas)
+    # 6. Preparar Dados para Gráfico (BLINDAGEM CONTRA ERROS)
     candles = []
     vwap_line = []
     bb_upper = []
     bb_lower = []
+    sma_14 = []
+    sma_50 = []
+    
+    # Função auxiliar para pegar valor seguro (evita crash se coluna não existir)
+    def safe_get(row, col_name):
+        if col_name not in df.columns: return None
+        val = row[col_name]
+        return None if pd.isna(val) else val
 
     for index, row in df.iterrows():
-        ts = int(row['date'].timestamp() * 1000) # Timestamp JS
+        ts = int(row['date'].timestamp() * 1000)
         
         # Vela
         candles.append({
@@ -185,14 +189,14 @@ def analyze_stock(
             "y": [row['open'], row['high'], row['low'], row['close']]
         })
         
-        # Indicadores (Tratamento de NaN para null do JSON)
-        vwap_val = None if np.isnan(row['VWAP']) else row['VWAP']
-        bbu_val = None if np.isnan(row['BB_Upper']) else row['BB_Upper']
-        bbl_val = None if np.isnan(row['BB_Lower']) else row['BB_Lower']
+        # Indicadores
+        vwap_line.append({"x": ts, "y": safe_get(row, 'VWAP')})
+        bb_upper.append({"x": ts, "y": safe_get(row, 'BB_Upper')})
+        bb_lower.append({"x": ts, "y": safe_get(row, 'BB_Lower')})
         
-        vwap_line.append({"x": ts, "y": vwap_val})
-        bb_upper.append({"x": ts, "y": bbu_val})
-        bb_lower.append({"x": ts, "y": bbl_val})
+        # Novas Médias
+        sma_14.append({"x": ts, "y": safe_get(row, 'SMA_14')})
+        sma_50.append({"x": ts, "y": safe_get(row, 'SMA_50')})
 
     return {
         "ticker": ticker,
@@ -205,17 +209,16 @@ def analyze_stock(
             "candles": candles,
             "vwap": vwap_line,
             "bb_upper": bb_upper,
-            "bb_lower": bb_lower
+            "bb_lower": bb_lower,
+            "sma_14": sma_14, # Enviando para o Front
+            "sma_50": sma_50  # Enviando para o Front
         },
         "used_features": result.get('used_features', [])
     }
 
 @app.get("/history/stats")
 def get_global_stats(db: Session = Depends(database.get_db)):
-    predictions = db.query(models.Prediction).filter(
-        models.Prediction.actual_close != None
-    ).all()
-    
+    predictions = db.query(models.Prediction).filter(models.Prediction.actual_close != None).all()
     stats = {}
     for p in predictions:
         if p.ticker not in stats:
@@ -223,9 +226,7 @@ def get_global_stats(db: Session = Depends(database.get_db)):
         
         s = stats[p.ticker]
         s["total"] += 1
-        if p.is_correct == "✅":
-            s["correct"] += 1
-        
+        if p.is_correct == "✅": s["correct"] += 1
         s["error_sum"] += (p.error_pct if p.error_pct else 0)
         s["conf_sum"] += (p.confidence if p.confidence else 0)
 
