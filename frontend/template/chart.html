@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DMG Chart Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="bg-gray-900 text-white h-screen flex flex-col font-sans">
+    <div
+      class="bg-gray-800 p-4 border-b border-gray-700 flex justify-between items-center shadow-md z-10"
+    >
+      <div>
+        <h1
+          id="chartTitle"
+          class="text-2xl font-bold text-white flex items-center gap-2"
+        >
+          <span class="animate-pulse">🟢</span> Carregando...
+        </h1>
+        <p id="chartSubtitle" class="text-sm text-gray-400">
+          Análise Institucional Quantitativa
+        </p>
+      </div>
+
+      <div class="flex gap-6 items-center">
+        <div class="text-right hidden md:block">
+          <p class="text-xs text-gray-500 uppercase font-bold">Previsão Alvo</p>
+          <p id="predPrice" class="text-2xl font-bold text-cyan-400 font-mono">
+            --
+          </p>
+        </div>
+
+        <div class="text-right hidden md:block">
+          <p class="text-xs text-gray-500 uppercase font-bold">Sinal IA</p>
+          <p id="aiSignal" class="text-2xl font-bold">--</p>
+        </div>
+
+        <a
+          href="/"
+          class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/50 px-4 py-2 rounded-lg transition flex items-center gap-2"
+        >
+          <span>Fechar</span> ✖
+        </a>
+      </div>
+    </div>
+
+    <div class="flex-1 p-2 relative bg-gray-900">
+      <div id="stockChart" class="w-full h-full"></div>
+    </div>
+
+    <script src="/static/js/chart_logic.js"></script>
+  </body>
+</html>
+b3_trader ├── b3_stocks.db ├── backend │ ├── __pycache__ │ │ ├──
+database.cpython-311.pyc │ │ ├── main.cpython-311.pyc │ │ ├──
+ml_engine.cpython-311.pyc │ │ ├── models.cpython-311.pyc │ │ └──
+services.cpython-311.pyc │ ├── database.py │ ├── main.py │ ├── ml_engine.py │
+├── models.py │ └── services.py ├── frontend │ ├── statics │ │ ├── css │ │ │ ├──
+history.css │ │ │ └── styles.css │ │ └── js │ │ ├── chart_logic.js │ │ ├──
+history.js │ │ └── script.js │ └── template │ ├── chart.html │ ├── history.html
+│ └── index.html └── requirements.txt
